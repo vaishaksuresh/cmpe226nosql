@@ -6,6 +6,7 @@ except ImportError:
 import os
 from pymongo import MongoClient
 
+
 def is_push_event(event_data):
 
     try:
@@ -40,6 +41,17 @@ def is_follow_event(event_data):
         return False
 
 
+def is_issue_event(event_data):
+    try:
+        return json.loads(unicode(event_data, errors='replace'))['type'] == 'IssuesEvent'
+    except UnicodeDecodeError:
+        print "UnicodeDecodeError: %s" % event_data
+        return False
+    except:
+        print "Exception: %s" % event_data
+        return False
+
+
 def process_files(file_name):
 
     with open(file_name) as data_file:
@@ -48,12 +60,14 @@ def process_files(file_name):
     push_events = filter(is_push_event, data)
     watch_events = filter(is_watch_event, data)
     follow_events = filter(is_follow_event, data)
+    issues_events = filter(is_issue_event, data)
 
     client = MongoClient()
     db = client.github_events
     push_collection = db.push_events
     watch_collection = db.watch_events
     follow_collection = db.follow_events
+    issues_collection = db.issues_events
 
 
     for line in push_events:
@@ -67,6 +81,10 @@ def process_files(file_name):
     for line in follow_events:
         #follow_data.append(json.loads(unicode(line, errors='replace')))
         follow_collection.save(json.loads(unicode(line, errors='replace')))
+
+    for line in issues_events:
+        #follow_data.append(json.loads(unicode(line, errors='replace')))
+        issues_collection.save(json.loads(unicode(line, errors='replace')))
 
 
 def main():
