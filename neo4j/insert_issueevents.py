@@ -25,7 +25,7 @@ issueevents = filter(is_issueevent, data)
 
 db = neo4j.GraphDatabaseService("http://localhost:7474/db/data")
 
-#db.clear()
+db.clear()
 
 for ie in issueevents:
 #     print ie
@@ -50,6 +50,8 @@ for ie in issueevents:
 #     print issueProperties["id"], issueProperties['action']
     
     repoNode = db.get_or_create_indexed_node(index_name="issueevents", key=repoId, value=repoName, properties=top_level_properties(ie['repo']))
+    repoNode.add_labels("REPOSITORY")
     issueNode = db.get_or_create_indexed_node(index_name="issueevents", key=issueId, value=issueTitle, properties=issueProperties)
+    issueNode.add_labels("ISSUE")
     db.create(rel(repoNode, ("ISSUE_" + issueAction, {"issue_created_at": issueCreatedAt, "issue_action":issueAction}), issueNode))
     print "created relationship: "  + "ISSUE_" + str(issueAction) + "\tbetween reposirotyNode: " + str(repoId) + "\t and IssueNode: " + str(issueId)
