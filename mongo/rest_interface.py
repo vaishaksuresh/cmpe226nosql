@@ -1,9 +1,12 @@
 __author__ = 'vaishaksuresh'
 import bottle
 from bottle import route, run, request, response, abort
-from pymongo import Connection
+from pymongo import Connection, ASCENDING
 from json import JSONEncoder
 from bson.objectid import ObjectId
+from bson.son import SON
+from bson.code import Code
+from pprint import pprint
 import urlparse
 import json
 from bson import json_util
@@ -75,6 +78,7 @@ def get_push_events():
     entries = [entry for entry in cursor]
     return MongoEncoder().encode(entries)
 
+
 @route('/issue', method='GET')
 def get_push_events():
     if not request.query.limit:
@@ -91,5 +95,30 @@ def get_push_events():
     response.content_type = 'application/json'
     entries = [entry for entry in cursor]
     return MongoEncoder().encode(entries)
+
+
+@route('/repo/top', method='GET')
+def get_push_events():
+
+    if not request.query.limit:
+        limit = 10
+    else:
+        limit = int(request.query.limit)
+    reducer = Code("""
+                    function(obj, prev){
+                    prev.count++;
+                    }
+                """)
+    cursor = db['push_events'].aggregate([
+        {"$group": {"_id": "$repo.name", "count": {"$sum": 1}}},
+        {"$sort": SON([("count", -1), ("_id", -1)])},
+        {"$limit": limit}
+    ])
+    if not cursor:
+        abort(404, 'No document with id')
+    response.content_type = 'application/json'
+    entries = [entry for entry in cursor['result']]
+    return MongoEncoder().encode(entries)
+
 
 run(host='localhost', port=8080)
