@@ -120,6 +120,7 @@ def get_push_events():
     entries = [entry for entry in cursor['result']]
     return MongoEncoder().encode(entries)
 
+
 @route('/user/top', method='GET')
 def get_push_events():
 
@@ -132,6 +133,54 @@ def get_push_events():
         {"$group": {"_id": {"username": "$actorlogin", "profileurl": "$actorurl"}, "commits": {"$sum": 1}}},
         {"$sort": SON([("commits", -1), ("_id", -1)])},
         {"$limit": limit},
+    ])
+    if not cursor:
+        abort(404, 'No document with id')
+    response.content_type = 'application/json'
+    entries = [entry for entry in cursor['result']]
+    return MongoEncoder().encode(entries)
+
+
+@route('/watch/top', method='GET')
+def get_push_events():
+
+    if not request.query.limit:
+        limit = 10
+    else:
+        limit = int(request.query.limit)
+    reducer = Code("""
+                    function(obj, prev){
+                    prev.count++;
+                    }
+                """)
+    cursor = db['watch_events'].aggregate([
+        {"$group": {"_id": {"repository": "$repo.name"}, "count": {"$sum": 1}}},
+        {"$sort": SON([("count", -1), ("_id", -1)])},
+        {"$limit": limit}
+    ])
+    if not cursor:
+        abort(404, 'No document with id')
+    response.content_type = 'application/json'
+    entries = [entry for entry in cursor['result']]
+    return MongoEncoder().encode(entries)
+
+
+@route('/issues/top', method='GET')
+def get_push_events():
+
+    if not request.query.limit:
+        limit = 10
+    else:
+        limit = int(request.query.limit)
+    reducer = Code("""
+                    function(obj, prev){
+                    prev.count++;
+                    }
+                """)
+    cursor = db['issues_events'].aggregate([
+        {"$group": {"_id": {"repository": "$repo.name"}, "count": {"$sum": 1}}},
+        {"$sort": SON([("count", -1), ("_id", -1)])},
+        {"$limit": limit}
     ])
     if not cursor:
         abort(404, 'No document with id')
