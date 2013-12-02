@@ -120,5 +120,24 @@ def get_push_events():
     entries = [entry for entry in cursor['result']]
     return MongoEncoder().encode(entries)
 
+@route('/user/top', method='GET')
+def get_push_events():
 
-run(host='localhost', port=8080)
+    if not request.query.limit:
+        limit = 10
+    else:
+        limit = int(request.query.limit)
+    cursor = db['push_events'].aggregate([
+        {"$project": {"actorlogin": "$actor.login", "actorurl": "$actor.url"}},
+        {"$group": {"_id": {"username": "$actorlogin", "profileurl": "$actorurl"}, "commits": {"$sum": 1}}},
+        {"$sort": SON([("commits", -1), ("_id", -1)])},
+        {"$limit": limit},
+    ])
+    if not cursor:
+        abort(404, 'No document with id')
+    response.content_type = 'application/json'
+    entries = [entry for entry in cursor['result']]
+    return MongoEncoder().encode(entries)
+
+
+run(host='localhost', port=8080, reloader=True)
