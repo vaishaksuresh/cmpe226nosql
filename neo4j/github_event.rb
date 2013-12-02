@@ -119,13 +119,32 @@ class Actor
     !!@node
   end
 
-  def recommend_actors_to_follow
+  def recommend_actors_to_follow(level=1)
+    recs = _span_out(level)
+    recs.map!(&:login)
+    puts recs
+    puts "Total actors: #{recs.length}"
+  end
+
+  def _span_out(level)
     require_existence!
 
-    repos = @node.outgoing(:watch).map(&:itself)
-    other_actors = repos.flat_map{|r| r.incoming(:watch).map(&:itself)}.uniq
-    other_actors.delete_if{|a| @name == a.login}
-    other_actors
+    recommendations = []
+    actors = [@node]
+
+    while level > 0
+      recs_from_this_level = actors.flat_map do |a|
+        a.outgoing.map(&:itself).
+          flat_map{|r| r.incoming.map(&:itself)}.
+          uniq.
+          delete_if{|a| @name == a.login}
+      end
+      recommendations << recs_from_this_level
+      actors = recs_from_this_level
+      level -= 1
+    end
+
+    recommendations.flatten.uniq
   end
 
   def require_existence!
