@@ -83,9 +83,55 @@ class GithubEvent
   end
 end
 
-range = (1..10)
+range = (1..1)
 i, j = range.first, range.last
 Yajl::Parser.parse(js) do |event|
-#  i += 1; break if i > j
+  i += 1; break if i > j
   GithubEvent.new(event, @neo).process
 end
+
+class Object
+  def itself
+    self
+  end
+end
+
+
+class Actor
+  attr_reader :node
+
+  def initialize(name, neo)
+    @name = name
+    @neo = neo
+    @log = Logger.new(STDOUT)
+  end
+
+  def inspect
+    "#{@name} [#{@node}]"
+  end
+
+  def load
+    @node ||= Neography::Node.find("actors", "login", @name, @neo) rescue nil
+  end
+
+  def exists?
+    load
+    !!@node
+  end
+
+  def recommend_actors_to_follow
+    require_existence!
+
+    repos = @node.outgoing(:watch).map(&:itself)
+    other_actors = repos.flat_map{|r| r.incoming(:watch).map(&:itself)}.uniq
+    other_actors.delete_if{|a| @name == a.login}
+    other_actors
+  end
+
+  def require_existence!
+    raise "Actor #{@name} doesn't exist" unless exists?
+  end
+end
+
+require 'irb'
+IRB.start
