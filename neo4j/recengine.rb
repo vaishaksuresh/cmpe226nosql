@@ -1,5 +1,21 @@
 #!/usr/bin/env ruby
 
+####################################################################
+# Installation instructions --                                     #
+# This script should use Bundler, but to keep things simple        #
+# for now we aren't using it.                                      #
+# Ensure that you are running a Ruby version 1.9.2.                #
+#                                                                  #
+# Install required gems like this --                               #
+# `gem install yajl-ruby mixlib-cli neography`                     #
+#                                                                  #
+# Then run the script in `load` mode --                            #
+# `./recengine.rb -x load -d ../path/to/data/dir -s server.com`    #
+#                                                                  #
+# After loading sufficient data, run it in the interactive mode -- #
+# `./recengine.rb -s server.com`                                   #
+####################################################################
+
 require 'irb'
 require 'zlib'
 require 'yajl'
@@ -77,6 +93,11 @@ if cli.config[:execute] == "load"
 elsif cli.config[:execute] == "interactive"
   Object.send(:remove_const, :ARGV)
   ARGV = []
+  def recommendations_for(u, l=1)
+    Actor.new(u, @neo).recommend_actors_to_follow(l)
+  end
+  puts "\n\n###\nSample usage: recommendations_for('user-name')"
+  puts "Can also be parameterized for levels: recommendations_for('user-name', 2)\n###\n\n"
   IRB.start
 else
   raise "Cannot execute #{cli.config[:execute]}"
