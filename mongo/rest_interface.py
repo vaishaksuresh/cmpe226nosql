@@ -1,6 +1,6 @@
 __author__ = 'vaishaksuresh'
 import bottle
-from bottle import route, run, request, response, abort
+from bottle import route, run, request, response, abort, static_file
 from pymongo import Connection, ASCENDING
 from json import JSONEncoder
 from bson.objectid import ObjectId
@@ -129,8 +129,7 @@ def get_push_events():
     else:
         limit = int(request.query.limit)
     cursor = db['push_events'].aggregate([
-        {"$project": {"actorlogin": "$actor.login", "actorurl": "$actor.url"}},
-        {"$group": {"_id": {"username": "$actorlogin", "profileurl": "$actorurl"}, "commits": {"$sum": 1}}},
+        {"$group": {"_id": {"username": "$actor.login", "profileurl": "$actor.url"}, "commits": {"$sum": 1}}},
         {"$sort": SON([("commits", -1), ("_id", -1)])},
         {"$limit": limit},
     ])
@@ -188,5 +187,11 @@ def get_push_events():
     entries = [entry for entry in cursor['result']]
     return MongoEncoder().encode(entries)
 
+
+@route('/getfile', method='GET')
+def get_index():
+        f = open('../visualization/index.html').read()
+        print f
+        return static_file("index.html", "/Users/vaishaksuresh/Semester3/cmpe226/dev/cmpe226nosql/visualization")
 
 run(host='localhost', port=8080, reloader=True)
