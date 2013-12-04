@@ -61,7 +61,8 @@ cli = RecEngine.new
 cli.parse_options
 
 @neo = Neography::Rest.new({:server => cli.config[:server],
-                             :port => cli.config[:port]})
+                             :port => cli.config[:port],
+                             :log_enabled => true})
 @log = Logger.new(STDOUT)
 
 if cli.config[:execute] == "load"
